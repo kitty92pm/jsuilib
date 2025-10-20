@@ -1,230 +1,253 @@
+// =======================================================
+// UnixUI v7.0 Professional — Complete ImGui-style JS UI
+// Author: Aledex / kitty92pm
+// =======================================================
 (() => {
+  const DefaultTheme = {
+    font: "Inter, sans-serif",
+    base: "rgba(15,15,15,0.95)",
+    accent: "#ff44ff",
+    text: "#ffffff",
+    border: "rgba(255,255,255,0.1)",
+    radius: "8px",
+    blur: "10px",
+    shadow: "0 0 25px rgba(255,0,255,0.25)",
+    transition: "0.15s",
+  };
+
+  const UIConfig = {
+    zIndex: 999999999,
+    theme: { ...DefaultTheme },
+  };
+
+  // === CSS ===
   const style = document.createElement("style");
   style.textContent = `
   .unixui {
     position: fixed; top: 100px; left: 100px;
-    width: 360px; background: rgba(25,25,25,0.9);
-    border: 1px solid #555; border-radius: 12px;
-    box-shadow: 0 0 25px rgba(255,0,255,0.2);
-    color: white; font-family: 'Inter', sans-serif;
-    overflow: hidden; z-index: 9999999;
-    transition: transform 0.3s ease, opacity 0.3s ease;
+    width: 450px; height: auto;
+    background: var(--base); color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    font-family: var(--font);
+    backdrop-filter: blur(var(--blur));
+    z-index: ${UIConfig.zIndex};
+    overflow: hidden; resize: both;
+    transition: all var(--transition) ease;
   }
-  .unixui.hide { opacity: 0; transform: scale(0.9); pointer-events: none; }
   .unixui-header {
-    padding: 8px 0; font-weight: 600; text-align: center;
-    background: rgba(255,255,255,0.05); cursor: move;
-    user-select: none; border-bottom: 1px solid #333;
+    text-align: center; font-weight: 600;
+    padding: 8px 0; background: rgba(255,255,255,0.05);
+    cursor: move; border-bottom: 1px solid var(--border);
+    user-select: none;
   }
   .unixui-tabs {
-    display: flex; justify-content: center; gap: 4px; padding: 5px;
-    border-bottom: 1px solid #333; flex-wrap: wrap;
+    display: flex; flex-wrap: wrap; gap: 5px;
+    justify-content: center; border-bottom: 1px solid var(--border);
+    padding: 6px;
   }
   .unixui-tab {
-    background: rgba(255,255,255,0.05); border: none;
-    padding: 5px 10px; border-radius: 6px; color: #eee;
-    cursor: pointer; transition: 0.2s;
+    background: rgba(255,255,255,0.06);
+    border: none; border-radius: 6px;
+    padding: 5px 12px; color: var(--text);
+    cursor: pointer; transition: var(--transition);
   }
-  .unixui-tab.active, .unixui-tab:hover { background: rgba(255,0,255,0.3); }
-  .unixui-content { padding: 10px; max-height: 380px; overflow-y: auto; }
-  .unixui-section { margin-bottom: 8px; }
-  .unixui-btn {
-    width: 100%; background: rgba(255,255,255,0.05);
-    border: none; border-radius: 6px; padding: 6px;
-    text-align: left; color: white; cursor: pointer;
-    transition: 0.2s; margin-top: 5px;
+  .unixui-tab.active, .unixui-tab:hover {
+    background: var(--accent); color: #fff;
   }
-  .unixui-btn:hover { background: rgba(255,0,255,0.3); }
-  .unixui-toggle { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
-  .unixui-toggle input { cursor: pointer; }
-  .unixui-slider { width: 100%; margin-top: 5px; }
-  .unixui-label { opacity: 0.8; font-size: 13px; margin-top: 5px; }
-  .unixui-dropdown select { width: 100%; padding: 5px; border-radius: 6px;
-    background: rgba(255,255,255,0.05); color: white; border: none; cursor: pointer; }
-  .unixui-keybind { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
-  .unixui-keybtn {
-    flex: none; padding: 4px 10px; border-radius: 6px;
-    background: rgba(255,255,255,0.05); border: none;
-    color: #eee; cursor: pointer; transition: 0.2s;
+  .unixui-content { padding: 10px; max-height: 420px; overflow-y: auto; }
+  .unixui-btn, .unixui-toggle-btn {
+    width: 100%; background: rgba(255,255,255,0.06);
+    border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text);
+    padding: 6px 10px; margin-top: 6px;
+    cursor: pointer; text-align: left;
+    transition: var(--transition);
   }
-  .unixui-keybtn.recording { background: rgba(255,0,255,0.4); }
+  .unixui-btn:hover, .unixui-toggle-btn.active {
+    background: var(--accent); color: #fff;
+  }
+  .unixui-toggle { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+  .unixui-switch {
+    width: 44px; height: 22px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 20px; position: relative;
+    cursor: pointer; transition: var(--transition);
+  }
+  .unixui-switch::after {
+    content: ""; position: absolute; top: 2px; left: 2px;
+    width: 18px; height: 18px; border-radius: 50%; background: #fff;
+    transition: var(--transition);
+  }
+  .unixui-switch.active { background: var(--accent); }
+  .unixui-switch.active::after { left: 24px; }
+  .unixui-dropdown, .unixui-input, .unixui-color {
+    display: flex; justify-content: space-between; align-items: center; margin-top: 8px;
+  }
+  .unixui-dropdown select, .unixui-input input {
+    background: rgba(255,255,255,0.07); color: var(--text);
+    border: 1px solid var(--border); border-radius: 6px;
+    padding: 4px 8px; cursor: pointer; transition: var(--transition);
+    appearance: none;
+  }
+  .unixui-dropdown select:hover, .unixui-input input:focus {
+    background: var(--accent);
+  }
+  .unixui-slider { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+  .unixui-slider input { width: 60%; cursor: pointer; }
+  .unixui-label { font-size: 13px; opacity: 0.85; margin-top: 8px; }
+  .unixui-color input[type="color"] {
+    border: none; width: 36px; height: 22px;
+    background: transparent; cursor: pointer;
+  }
   `;
   document.head.appendChild(style);
 
+  // === Movement ===
   const makeDraggable = el => {
     const header = el.querySelector(".unixui-header");
-    let dragging = false, offX = 0, offY = 0;
-    header.onmousedown = e => { dragging = true; offX = e.clientX - el.offsetLeft; offY = e.clientY - el.offsetTop; };
-    document.onmouseup = () => dragging = false;
+    let drag = false, offX = 0, offY = 0;
+    header.onmousedown = e => { drag = true; offX = e.clientX - el.offsetLeft; offY = e.clientY - el.offsetTop; };
+    document.onmouseup = () => drag = false;
     document.onmousemove = e => {
-      if (!dragging) return;
+      if (!drag) return;
       el.style.left = e.clientX - offX + "px";
       el.style.top = e.clientY - offY + "px";
     };
   };
 
-  class Menu {
-    constructor(title) {
+  // === Tab Context ===
+  class TabContext {
+    constructor(tab) { this.tab = tab; }
+
+    Button(text, cb) {
+      const b = document.createElement("button");
+      b.className = "unixui-btn"; b.textContent = text;
+      b.onclick = cb; this.tab.content.appendChild(b);
+      return this;
+    }
+
+    Toggle(label, cb, key, type = "switch") {
+      const wrap = document.createElement("div"); wrap.className = "unixui-toggle";
+      const txt = document.createElement("span"); txt.textContent = label;
+      if (type === "switch") {
+        const sw = document.createElement("div");
+        sw.className = "unixui-switch";
+        if (key && localStorage.getItem(key) === "true") sw.classList.add("active");
+        sw.onclick = () => {
+          sw.classList.toggle("active");
+          const val = sw.classList.contains("active");
+          cb(val); if (key) localStorage.setItem(key, val);
+        };
+        wrap.append(txt, sw);
+      } else {
+        const b = document.createElement("button");
+        b.className = "unixui-toggle-btn"; b.textContent = label;
+        if (key && localStorage.getItem(key) === "true") b.classList.add("active");
+        b.onclick = () => {
+          b.classList.toggle("active");
+          const val = b.classList.contains("active");
+          cb(val); if (key) localStorage.setItem(key, val);
+        };
+        wrap.appendChild(b);
+      }
+      this.tab.content.appendChild(wrap);
+      return this;
+    }
+
+    Slider(label, min, max, val, cb, key) {
+      const wrap = document.createElement("div"); wrap.className = "unixui-slider";
+      const span = document.createElement("span"); span.textContent = `${label}: ${val}`;
+      const input = document.createElement("input"); input.type = "range"; input.min = min; input.max = max;
+      input.value = key && localStorage.getItem(key) || val;
+      input.oninput = () => { span.textContent = `${label}: ${input.value}`; cb(+input.value); if (key) localStorage.setItem(key, input.value); };
+      wrap.append(span, input); this.tab.content.appendChild(wrap); return this;
+    }
+
+    Dropdown(label, options, def, cb, key) {
+      const wrap = document.createElement("div"); wrap.className = "unixui-dropdown";
+      const span = document.createElement("span"); span.textContent = label;
+      const sel = document.createElement("select");
+      options.forEach(o => { const opt = document.createElement("option"); opt.value = o; opt.textContent = o; sel.appendChild(opt); });
+      sel.value = key && localStorage.getItem(key) || def;
+      sel.onchange = () => { cb(sel.value); if (key) localStorage.setItem(key, sel.value); };
+      wrap.append(span, sel); this.tab.content.appendChild(wrap); return this;
+    }
+
+    Input(label, def, cb, key) {
+      const wrap = document.createElement("div"); wrap.className = "unixui-input";
+      const span = document.createElement("span"); span.textContent = label;
+      const input = document.createElement("input"); input.type = "text"; input.value = key && localStorage.getItem(key) || def;
+      input.onchange = () => { cb(input.value); if (key) localStorage.setItem(key, input.value); };
+      wrap.append(span, input); this.tab.content.appendChild(wrap); return this;
+    }
+
+    Color(label, def, cb, key) {
+      const wrap = document.createElement("div"); wrap.className = "unixui-color";
+      const span = document.createElement("span"); span.textContent = label;
+      const input = document.createElement("input"); input.type = "color"; input.value = key && localStorage.getItem(key) || def;
+      input.oninput = () => { cb(input.value); if (key) localStorage.setItem(key, input.value); };
+      wrap.append(span, input); this.tab.content.appendChild(wrap); return this;
+    }
+
+    Label(txt) {
+      const l = document.createElement("div"); l.className = "unixui-label"; l.textContent = txt;
+      this.tab.content.appendChild(l); return this;
+    }
+  }
+
+  // === Menu ===
+  class UnixUIMenu {
+    constructor(title = "UnixUI") {
       this.el = document.createElement("div");
       this.el.className = "unixui";
-      this.el.innerHTML = `
-        <div class="unixui-header">${title}</div>
-        <div class="unixui-tabs"></div>
-        <div class="unixui-content"></div>`;
+      Object.entries(UIConfig.theme).forEach(([k,v]) => this.el.style.setProperty(`--${k}`, v));
+      this.el.innerHTML = `<div class="unixui-header">${title}</div>
+        <div class="unixui-tabs"></div><div class="unixui-content"></div>`;
       document.body.appendChild(this.el);
-
       this.tabsEl = this.el.querySelector(".unixui-tabs");
       this.contentEl = this.el.querySelector(".unixui-content");
-      this.tabs = {};
-      this.currentTab = null;
-
+      this.tabs = {}; this.currentTab = null;
       makeDraggable(this.el);
     }
 
-    AddTab(name) {
-      const tabBtn = document.createElement("button");
-      tabBtn.className = "unixui-tab";
-      tabBtn.textContent = name;
-      const container = document.createElement("div");
-      container.className = "unixui-section";
-      container.style.display = "none";
-      this.contentEl.appendChild(container);
-      this.tabsEl.appendChild(tabBtn);
-
-      tabBtn.onclick = () => {
-        Object.entries(this.tabs).forEach(([n, c]) => {
-          c.el.style.display = n === name ? "block" : "none";
-          c.btn.classList.toggle("active", n === name);
-        });
-        this.currentTab = name;
-      };
-
-      this.tabs[name] = { el: container, btn: tabBtn };
-      if (!this.currentTab) tabBtn.click();
-      return this;
-    }
-
-    _current() { return this.tabs[this.currentTab]?.el || this.contentEl; }
-
-    AddButton(label, cb) {
-      const b = document.createElement("button");
-      b.className = "unixui-btn";
-      b.textContent = label;
-      b.onclick = cb;
-      this._current().appendChild(b);
-      return this;
-    }
-
-    AddToggle(label, cb, saveKey) {
-      const wrap = document.createElement("div");
-      wrap.className = "unixui-toggle";
-      const box = document.createElement("input");
-      box.type = "checkbox";
-      const txt = document.createElement("span");
-      txt.textContent = label;
-
-      if (saveKey && localStorage.getItem(saveKey) === "true") box.checked = true;
-      box.onchange = () => {
-        if (saveKey) localStorage.setItem(saveKey, box.checked);
-        cb(box.checked);
-      };
-
-      wrap.append(box, txt);
-      this._current().appendChild(wrap);
-      return this;
-    }
-
-    AddSlider(label, min, max, val, cb, saveKey) {
-      const lab = document.createElement("div");
-      lab.className = "unixui-label";
-      lab.textContent = `${label}: ${val}`;
-      const input = document.createElement("input");
-      input.type = "range"; input.min = min; input.max = max; input.value = val;
-      input.className = "unixui-slider";
-      if (saveKey && localStorage.getItem(saveKey))
-        input.value = localStorage.getItem(saveKey);
-      input.oninput = () => {
-        lab.textContent = `${label}: ${input.value}`;
-        if (saveKey) localStorage.setItem(saveKey, input.value);
-        cb(Number(input.value));
-      };
-      this._current().append(lab, input);
-      return this;
-    }
-
-    AddDropdown(label, options, def, cb, saveKey) {
-      const wrap = document.createElement("div");
-      wrap.className = "unixui-dropdown";
-      const lab = document.createElement("div");
-      lab.className = "unixui-label";
-      lab.textContent = label;
-      const sel = document.createElement("select");
-      options.forEach(o => {
-        const opt = document.createElement("option");
-        opt.value = o; opt.textContent = o;
-        sel.appendChild(opt);
-      });
-      sel.value = saveKey && localStorage.getItem(saveKey) ? localStorage.getItem(saveKey) : def;
-      sel.onchange = () => {
-        if (saveKey) localStorage.setItem(saveKey, sel.value);
-        cb(sel.value);
-      };
-      wrap.append(lab, sel);
-      this._current().appendChild(wrap);
-      return this;
-    }
-
-    AddKeybind(label, defaultKey, cb, saveKey) {
-      const wrap = document.createElement("div");
-      wrap.className = "unixui-keybind";
-      const lab = document.createElement("div");
-      lab.textContent = label;
-      const btn = document.createElement("button");
-      btn.className = "unixui-keybtn";
-      btn.textContent = defaultKey.toUpperCase();
-      let key = saveKey && localStorage.getItem(saveKey) ? localStorage.getItem(saveKey) : defaultKey;
-
-      btn.onclick = () => {
-        btn.textContent = "Press a key...";
-        btn.classList.add("recording");
-        const listen = e => {
-          key = e.key.toUpperCase();
-          if (saveKey) localStorage.setItem(saveKey, key);
-          btn.textContent = key;
-          btn.classList.remove("recording");
-          document.removeEventListener("keydown", listen);
+    Add(tabName) {
+      let tab = this.tabs[tabName];
+      if (!tab) {
+        const btn = document.createElement("button");
+        btn.className = "unixui-tab"; btn.textContent = tabName;
+        const content = document.createElement("div"); content.style.display = "none";
+        this.contentEl.appendChild(content); this.tabsEl.appendChild(btn);
+        tab = { btn, content }; this.tabs[tabName] = tab;
+        btn.onclick = () => {
+          Object.values(this.tabs).forEach(t => { t.btn.classList.remove("active"); t.content.style.display = "none"; });
+          btn.classList.add("active"); content.style.display = "block"; this.currentTab = tabName;
         };
-        document.addEventListener("keydown", listen);
-      };
+        if (!this.currentTab) btn.click();
+      }
+      return new TabContext(tab);
+    }
 
-      document.addEventListener("keydown", e => {
-        if (e.key.toUpperCase() === key.toUpperCase()) cb();
-      });
-
-      wrap.append(lab, btn);
-      this._current().appendChild(wrap);
+    SetTheme(overrides = {}) {
+      Object.assign(UIConfig.theme, overrides);
+      Object.entries(UIConfig.theme).forEach(([k,v]) => this.el.style.setProperty(`--${k}`, v));
       return this;
     }
 
-    AddLabel(text) {
-      const l = document.createElement("div");
-      l.className = "unixui-label";
-      l.textContent = text;
-      this._current().appendChild(l);
-      return this;
+    ExportTheme() { return JSON.stringify(UIConfig.theme, null, 2); }
+    ImportTheme(json) {
+      try { const t = JSON.parse(json); this.SetTheme(t); } catch(e){ console.error("Invalid theme JSON", e); }
     }
 
-    SetTheme(t) {
-      const e = this.el;
-      if (t === "light") e.style.background = "rgba(250,250,250,0.9)", e.style.color = "#111";
-      else if (t === "kuromi") e.style.background = "rgba(40,0,60,0.95)", e.style.boxShadow = "0 0 30px rgba(255,100,255,0.6)";
-      else e.style.background = "rgba(25,25,25,0.9)", e.style.color = "white";
-      return this;
-    }
-
-    Toggle() { this.el.classList.toggle("hide"); }
+    Toggle() { this.el.style.display = this.el.style.display === "none" ? "block" : "none"; }
     Destroy() { this.el.remove(); }
   }
 
-  window.UI = { New: t => new Menu(t), version: "2.0" };
+  window.UnixUI = {
+    New: title => new UnixUIMenu(title),
+    Config: UIConfig,
+    Theme: DefaultTheme,
+    version: "7.0"
+  };
 })();
