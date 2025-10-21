@@ -34,7 +34,7 @@ Alternatively, save the file as unixui.js and include it in your HTML project:
 
 Or dynamically load from a raw GitHub link:
 
-fetch("https://raw.githubusercontent.com/yourname/unixui/main/unixui.js")
+fetch("[https://raw.githubusercontent.com/yourname/unixui/main/unixui.js](https://raw.githubusercontent.com/kitty92pm/jsuilib/refs/heads/main/unixuilib.js)")
   .then(r => r.text())
   .then(eval);
 
