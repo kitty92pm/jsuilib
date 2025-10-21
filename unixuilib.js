@@ -1,13 +1,16 @@
 // =======================================================
-// UnixUI v1.0
+// UnixUI v2.0
 // Author: List / 97pm
 // =======================================================
 (() => {
+  // === Core Theme System ===
   const DefaultTheme = {
     font: "Inter, sans-serif",
     base: "rgba(15,15,15,0.95)",
     accent: "#ff44ff",
+    accentHover: "#ff66ff",
     text: "#ffffff",
+    textMuted: "#cccccc",
     border: "rgba(255,255,255,0.1)",
     radius: "8px",
     blur: "10px",
@@ -26,6 +29,7 @@
   const UIConfig = {
     zIndex: 999999999,
     theme: { ...DefaultTheme },
+    menus: {},
   };
 
   // === CSS Injection ===
@@ -56,15 +60,25 @@
     padding: 5px 12px; color: var(--text); cursor: pointer;
     transition: var(--transition);
   }
-  .unixui-tab.active, .unixui-tab:hover { background: var(--accent); color: #fff; }
-  .unixui-content { padding: 10px; max-height: 420px; overflow-y: auto; }
+  .unixui-tab.active, .unixui-tab:hover {
+    background: var(--accent); color: #fff;
+  }
+  .unixui-content {
+    padding: 10px; max-height: 420px; overflow-y: auto;
+    transition: opacity 0.15s ease;
+  }
   .unixui-btn, .unixui-toggle-btn {
     width: 100%; background: rgba(255,255,255,0.06);
     border: 1px solid var(--border); border-radius: 6px;
     color: var(--text); padding: 6px 10px; margin-top: 6px;
     cursor: pointer; text-align: left; transition: var(--transition);
   }
-  .unixui-btn:hover, .unixui-toggle-btn.active { background: var(--accent); color: #fff; }
+  .unixui-btn:hover, .unixui-toggle-btn.active {
+    background: var(--accent); color: #fff;
+  }
+  .unixui-grid { display: grid; gap: 6px; width: 100%; margin-top: 6px; }
+  .unixui-grid.two { grid-template-columns: repeat(2, 1fr); }
+  .unixui-grid.three { grid-template-columns: repeat(3, 1fr); }
   .unixui-toggle { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
   .unixui-switch {
     width: 44px; height: 22px; background: rgba(255,255,255,0.15);
@@ -95,7 +109,7 @@
   .unixui-separator { height: 1px; background: var(--border); margin: 8px 0; }
   .unixui-group { margin-top: 10px; padding: 6px; border: 1px solid var(--border); border-radius: 6px; }
   .unixui-collapsible > .header { cursor: pointer; font-weight: bold; margin-top: 8px; }
-  .unixui-collapsible > .content { display: none; margin-top: 6px; }
+  .unixui-collapsible > .content { display: none; margin-top: 6px; transition: all 0.2s ease; }
   .unixui-notify {
     position: fixed; bottom: 30px; right: 30px;
     display: flex; flex-direction: column; gap: 10px; z-index: ${UIConfig.zIndex + 1};
@@ -108,10 +122,23 @@
   .unixui-note.success { background: rgba(0,200,100,0.9); }
   .unixui-note.error { background: rgba(255,50,50,0.9); }
   @keyframes slideIn { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+  .unixui-dialog {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: var(--base); border: 1px solid var(--border);
+    border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 20px; width: 300px; text-align: center;
+    z-index: ${UIConfig.zIndex + 5};
+  }
+  .unixui-dialog button {
+    margin: 10px 5px; border: none; padding: 6px 10px; border-radius: 6px;
+    cursor: pointer; background: var(--accent); color: #fff;
+    transition: var(--transition);
+  }
+  .unixui-dialog button:hover { background: var(--accentHover); }
   `;
   document.head.appendChild(style);
 
-  // === Utility ===
+  // === Utilities ===
   const State = {
     Get: key => localStorage.getItem(key),
     Set: (key, value) => localStorage.setItem(key, value)
@@ -143,27 +170,15 @@
     Toggle(label, cb, key, type = "switch") {
       const wrap = document.createElement("div"); wrap.className = "unixui-toggle";
       const txt = document.createElement("span"); txt.textContent = label;
-      if (type === "switch") {
-        const sw = document.createElement("div");
-        sw.className = "unixui-switch";
-        if (key && State.Get(key) === "true") sw.classList.add("active");
-        sw.onclick = () => {
-          sw.classList.toggle("active");
-          const val = sw.classList.contains("active");
-          cb(val); if (key) State.Set(key, val);
-        };
-        wrap.append(txt, sw);
-      } else {
-        const b = document.createElement("button");
-        b.className = "unixui-toggle-btn"; b.textContent = label;
-        if (key && State.Get(key) === "true") b.classList.add("active");
-        b.onclick = () => {
-          b.classList.toggle("active");
-          const val = b.classList.contains("active");
-          cb(val); if (key) State.Set(key, val);
-        };
-        wrap.appendChild(b);
-      }
+      const sw = document.createElement("div");
+      sw.className = "unixui-switch";
+      if (key && State.Get(key) === "true") sw.classList.add("active");
+      sw.onclick = () => {
+        sw.classList.toggle("active");
+        const val = sw.classList.contains("active");
+        cb(val); if (key) State.Set(key, val);
+      };
+      wrap.append(txt, sw);
       this.tab.content.appendChild(wrap);
       return this;
     }
@@ -203,14 +218,6 @@
       wrap.append(span, input); this.tab.content.appendChild(wrap); return this;
     }
 
-    Textarea(label, def, cb, key) {
-      const wrap = document.createElement("div"); wrap.className = "unixui-textarea";
-      const span = document.createElement("span"); span.textContent = label;
-      const area = document.createElement("textarea"); area.value = key && State.Get(key) || def;
-      area.onchange = () => { cb(area.value); if (key) State.Set(key, area.value); };
-      wrap.append(span, area); this.tab.content.appendChild(wrap); return this;
-    }
-
     Color(label, def, cb, key) {
       const wrap = document.createElement("div"); wrap.className = "unixui-color";
       const span = document.createElement("span"); span.textContent = label;
@@ -241,11 +248,23 @@
       return this;
     }
 
+    Grid(cols, cb) {
+      const g = document.createElement("div");
+      g.className = "unixui-grid " + (cols === 3 ? "three" : "two");
+      this.tab.content.appendChild(g);
+      const ctx = new TabContext({ content: g });
+      cb(ctx);
+      return this;
+    }
+
     Collapsible(label, cb) {
       const col = document.createElement("div"); col.className = "unixui-collapsible";
       const head = document.createElement("div"); head.className = "header"; head.textContent = label;
       const cont = document.createElement("div"); cont.className = "content";
-      head.onclick = () => cont.style.display = cont.style.display === "block" ? "none" : "block";
+      head.onclick = () => {
+        const open = cont.style.display === "block";
+        cont.style.display = open ? "none" : "block";
+      };
       col.append(head, cont);
       this.tab.content.appendChild(col);
       const ctx = new TabContext({ content: cont });
@@ -256,7 +275,9 @@
 
   // === Menu ===
   class UnixUIMenu {
-    constructor(title = "UnixUI") {
+    constructor(title = "UnixUI", opts = {}) {
+      this.id = opts.id || `unixui_${Math.random().toString(36).substr(2,6)}`;
+      if (UIConfig.menus[this.id]) return UIConfig.menus[this.id];
       this.el = document.createElement("div");
       this.el.className = "unixui";
       Object.entries(UIConfig.theme).forEach(([k,v]) => this.el.style.setProperty(`--${k}`, v));
@@ -267,6 +288,7 @@
       this.contentEl = this.el.querySelector(".unixui-content");
       this.tabs = {}; this.currentTab = null;
       makeDraggable(this.el);
+      UIConfig.menus[this.id] = this;
     }
 
     Add(tabName) {
@@ -286,24 +308,18 @@
       return new TabContext(tab);
     }
 
-    SetTheme(overrides = {}) {
+    SetTheme(overrides = {}, animate=false) {
+      if (animate) this.el.style.transition = "all 0.3s ease";
       Object.assign(UIConfig.theme, overrides);
       Object.entries(UIConfig.theme).forEach(([k,v]) => this.el.style.setProperty(`--${k}`, v));
       return this;
     }
 
-    UsePreset(name) {
-      if (ThemePresets[name]) this.SetTheme(ThemePresets[name]);
-      return this;
-    }
-
+    UsePreset(name) { if (ThemePresets[name]) this.SetTheme(ThemePresets[name]); return this; }
     ExportTheme() { return JSON.stringify(UIConfig.theme, null, 2); }
-    ImportTheme(json) {
-      try { const t = JSON.parse(json); this.SetTheme(t); } catch(e){ console.error("Invalid theme JSON", e); }
-    }
-
+    ImportTheme(json) { try { const t = JSON.parse(json); this.SetTheme(t); } catch(e){ console.error("Invalid theme JSON", e); } }
     Toggle() { this.el.style.display = this.el.style.display === "none" ? "block" : "none"; }
-    Destroy() { this.el.remove(); }
+    Destroy() { this.el.remove(); delete UIConfig.menus[this.id]; }
   }
 
   // === Notifications ===
@@ -317,26 +333,51 @@
     setTimeout(() => note.remove(), time);
   };
 
-  // === Hotkey ===
-  window.addEventListener("keydown", e => {
-    if (e.key === "F1") {
-      const ui = document.querySelector(".unixui");
-      if (ui) ui.style.display = ui.style.display === "none" ? "block" : "none";
+  // === Dialogs ===
+  const Dialog = (title, msg, buttons = { OK:()=>{} }) => {
+    const d = document.createElement("div"); d.className = "unixui-dialog";
+    d.innerHTML = `<h3>${title}</h3><p>${msg}</p>`;
+    for (const [k,fn] of Object.entries(buttons)) {
+      const b = document.createElement("button"); b.textContent = k;
+      b.onclick = () => { fn(); d.remove(); };
+      d.appendChild(b);
     }
+    document.body.appendChild(d);
+  };
+
+  // === Keybinds ===
+  const KeyBinds = {};
+  const BindKey = (key, cb) => {
+    KeyBinds[key.toLowerCase()] = cb;
+  };
+  window.addEventListener("keydown", e => {
+    const fn = KeyBinds[e.key.toLowerCase()];
+    if (fn) fn(e);
   });
 
-  // === Plugin Registration ===
-  const Components = {};
-  const RegisterComponent = (name, fn) => Components[name] = fn;
+  // === Sound System ===
+  const beep = () => {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator(); const gain = ctx.createGain();
+    osc.type = "square"; osc.frequency.value = 800;
+    gain.gain.setValueAtTime(0.05, ctx.currentTime);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(); osc.stop(ctx.currentTime + 0.05);
+  };
 
+  // === Exports ===
   window.UnixUI = {
-    New: title => new UnixUIMenu(title),
+    New: (title, opts) => new UnixUIMenu(title, opts),
+    Get: id => UIConfig.menus[id],
+    Exists: id => !!UIConfig.menus[id],
     Config: UIConfig,
     Theme: DefaultTheme,
     Presets: ThemePresets,
     Notify,
+    Dialog,
+    BindKey,
+    Beep: beep,
     State,
-    RegisterComponent,
-    version: "1.0"
+    version: "2.0"
   };
 })();
