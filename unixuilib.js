@@ -117,17 +117,81 @@
     Set: (key, value) => localStorage.setItem(key, value)
   };
 
+    // === Smooth Dragging & Resizing ===
   const makeDraggable = el => {
     const header = el.querySelector(".unixui-header");
-    let drag = false, offX = 0, offY = 0;
-    header.onmousedown = e => { drag = true; offX = e.clientX - el.offsetLeft; offY = e.clientY - el.offsetTop; };
-    document.onmouseup = () => drag = false;
-    document.onmousemove = e => {
-      if (!drag) return;
-      el.style.left = e.clientX - offX + "px";
-      el.style.top = e.clientY - offY + "px";
+    let dragging = false, offsetX = 0, offsetY = 0;
+    let posX = 0, posY = 0;
+    let velocityX = 0, velocityY = 0;
+    let animFrame = null;
+
+    const smoothMove = () => {
+      if (!dragging) return;
+      posX += (velocityX - posX) * 0.35;
+      posY += (velocityY - posY) * 0.35;
+      el.style.transform = `translate(${posX}px, ${posY}px)`;
+      animFrame = requestAnimationFrame(smoothMove);
     };
+
+    header.addEventListener("mousedown", e => {
+      dragging = true;
+      offsetX = e.clientX - el.offsetLeft;
+      offsetY = e.clientY - el.offsetTop;
+      el.style.willChange = "transform";
+      posX = 0; posY = 0;
+      velocityX = 0; velocityY = 0;
+      cancelAnimationFrame(animFrame);
+      animFrame = requestAnimationFrame(smoothMove);
+      document.body.style.userSelect = "none";
+    });
+
+    document.addEventListener("mouseup", () => {
+      dragging = false;
+      cancelAnimationFrame(animFrame);
+      el.style.willChange = "auto";
+      el.style.left = `${el.offsetLeft + posX}px`;
+      el.style.top = `${el.offsetTop + posY}px`;
+      el.style.transform = "none";
+      document.body.style.userSelect = "";
+    });
+
+    document.addEventListener("mousemove", e => {
+      if (!dragging) return;
+      velocityX = e.clientX - offsetX - el.offsetLeft;
+      velocityY = e.clientY - offsetY - el.offsetTop;
+    });
+
+    // Smooth resize observer for less lag
+    const resizer = document.createElement("div");
+    resizer.style.position = "absolute";
+    resizer.style.width = "14px";
+    resizer.style.height = "14px";
+    resizer.style.right = "0";
+    resizer.style.bottom = "0";
+    resizer.style.cursor = "nwse-resize";
+    resizer.style.zIndex = 10;
+    el.appendChild(resizer);
+
+    let resizing = false, startW = 0, startH = 0, startX = 0, startY = 0;
+    resizer.addEventListener("mousedown", e => {
+      e.stopPropagation();
+      resizing = true;
+      startW = el.offsetWidth;
+      startH = el.offsetHeight;
+      startX = e.clientX;
+      startY = e.clientY;
+      document.body.style.userSelect = "none";
+    });
+    document.addEventListener("mouseup", () => { resizing = false; document.body.style.userSelect = ""; });
+    document.addEventListener("mousemove", e => {
+      if (!resizing) return;
+      const w = Math.max(300, startW + (e.clientX - startX));
+      const h = Math.max(200, startH + (e.clientY - startY));
+      el.style.width = w + "px";
+      el.style.height = h + "px";
+    });
   };
+
 
   // === Tab Context ===
   class TabContext {
