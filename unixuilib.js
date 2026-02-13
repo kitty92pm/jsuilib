@@ -27,7 +27,7 @@
   };
 
   const UIConfig = {
-    zIndex: 999999999,
+    zIndex: 9999999999999,
     theme: { ...DefaultTheme },
     menus: {},
   };
@@ -106,6 +106,16 @@
   .unixui-slider { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
   .unixui-slider input { width: 60%; cursor: pointer; }
   .unixui-label { font-size: 13px; opacity: 0.85; margin-top: 8px; }
+  .unixui-title {
+        display = "flex";
+        justifyContent = "center";
+        margin = "10px 0";
+        font-size: 16px;
+        font-weight: 600;
+        margin: 12px 0 6px 0;
+        opacity: 0.95;
+        color: var(--text);
+  }
   .unixui-separator { height: 1px; background: var(--border); margin: 8px 0; }
   .unixui-group { margin-top: 10px; padding: 6px; border: 1px solid var(--border); border-radius: 6px; }
   .unixui-collapsible > .header { cursor: pointer; font-weight: bold; margin-top: 8px; }
@@ -226,9 +236,65 @@
       wrap.append(span, input); this.tab.content.appendChild(wrap); return this;
     }
 
+    CenterTitle(txt) {
+        const wrap = document.createElement("div");
+        wrap.style.display = "flex";
+        wrap.style.justifyContent = "center";
+        wrap.style.margin = "10px 0";
+
+        const span = document.createElement("span");
+        span.textContent = txt;
+        span.style.fontWeight = "bold";
+        span.style.fontSize = "13px";
+        span.style.opacity = "0.95";
+        span.style.color = "var(--text)";
+
+        wrap.appendChild(span);
+        this.tab.content.appendChild(wrap);
+        return this;
+    }
+
+
+    Title(txt) {
+        const t = document.createElement("div");
+        t.className = "unixui-title";
+        t.textContent = txt;
+        this.tab.content.appendChild(t);
+        return this;
+    }
+
+
     Label(txt) {
       const l = document.createElement("div"); l.className = "unixui-label"; l.textContent = txt;
       this.tab.content.appendChild(l); return this;
+    }
+
+    TitledSeparator(txt) {
+        const wrap = document.createElement("div");
+        wrap.style.display = "flex";
+        wrap.style.alignItems = "center";
+        wrap.style.margin = "8px 0";
+    
+        const line1 = document.createElement("div");
+        line1.style.flex = "1";
+        line1.style.height = "1px";
+        line1.style.background = "var(--border)";
+    
+        const span = document.createElement("span");
+        span.textContent = txt;
+        span.style.margin = "0 8px";
+        span.style.fontWeight = "bold";
+        span.style.fontSize = "13px";
+        span.style.opacity = "0.85";
+    
+        const line2 = document.createElement("div");
+        line2.style.flex = "1";
+        line2.style.height = "1px";
+        line2.style.background = "var(--border)";
+    
+        wrap.append(line1, span, line2);
+        this.tab.content.appendChild(wrap);
+        return this;
     }
 
     Separator() {
@@ -290,6 +356,25 @@
       makeDraggable(this.el);
       UIConfig.menus[this.id] = this;
     }
+
+    ToggleKey(key, options = {}) {
+    if (this._toggleKey) {
+        delete KeyBinds[this._toggleKey];
+    }
+
+    this._toggleKey = key.toLowerCase();
+
+    KeyBinds[this._toggleKey] = (e) => {
+        if (options.ctrl && !e.ctrlKey) return;
+        if (options.shift && !e.shiftKey) return;
+        if (options.alt && !e.altKey) return;
+
+        this.Toggle();
+    };
+
+    return this;
+}
+
 
     Add(tabName) {
       let tab = this.tabs[tabName];
